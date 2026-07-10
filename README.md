@@ -306,7 +306,7 @@ go tool cover -html=coverage.out -o coverage.html
 
 ---
 
-> **项目维护者：** 心程  
+> **项目维护者：** 见山架构师  
 > **仓库地址：** https://github.com/xf20054658/EmergencyMSystem-be  
 > **如有应急部署需求，请直接提交 Issue，我们会在 24 小时内响应。  
 > **联系方式：** 通过 GitHub Issue 或飞书联系**
