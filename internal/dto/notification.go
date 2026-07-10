@@ -4,16 +4,38 @@ import "time"
 
 // --- Notification DTOs ---
 
-// SubscribeRequest 订阅授权
+// SubscribeRequest 订阅授权（兼容单数和复数字段名）
 type SubscribeRequest struct {
-	TemplateID string `json:"template_id" binding:"required"`
-	Type       string `json:"type" binding:"required,oneof=longterm once"`
+	TemplateID  string   `json:"template_id"`
+	TemplateIDs []string `json:"template_ids"`
+	Type        string   `json:"subscribe_type,omitempty"`
+	// 兼容旧格式
+	SubscribeType string `json:"type,omitempty"`
+}
+
+// GetTemplateIDs 获取模板 ID 列表（支持单数和复数两种格式）
+func (r *SubscribeRequest) GetTemplateIDs() []string {
+	if len(r.TemplateIDs) > 0 {
+		return r.TemplateIDs
+	}
+	if r.TemplateID != "" {
+		return []string{r.TemplateID}
+	}
+	return nil
+}
+
+// GetSubscribeType 获取订阅类型
+func (r *SubscribeRequest) GetSubscribeType() string {
+	if r.SubscribeType != "" {
+		return r.SubscribeType
+	}
+	return r.Type
 }
 
 // UpdatePreferenceRequest 更新通知偏好
 type UpdatePreferenceRequest struct {
 	TemplateID string `json:"template_id" binding:"required"`
-	Enabled    bool   `json:"enabled" binding:"required"`
+	Enabled    bool   `json:"enabled"`
 }
 
 // NotificationListQuery 通知列表查询

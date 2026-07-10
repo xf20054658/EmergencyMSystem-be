@@ -15,6 +15,7 @@ import (
 func AuthRequired(cfg config.JWTConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
+		authHeader = strings.TrimSpace(authHeader)
 		if authHeader == "" {
 			response.Unauthorized(c, "missing authorization header")
 			c.Abort()
@@ -28,7 +29,14 @@ func AuthRequired(cfg config.JWTConfig) gin.HandlerFunc {
 			return
 		}
 
-		claims, err := pkgjwt.ParseToken(cfg, parts[1])
+		tokenString := strings.TrimSpace(parts[1])
+		if tokenString == "" {
+			response.Unauthorized(c, "empty token")
+			c.Abort()
+			return
+		}
+
+		claims, err := pkgjwt.ParseToken(cfg, tokenString)
 		if err != nil {
 			response.Unauthorized(c, "invalid or expired token")
 			c.Abort()

@@ -239,6 +239,12 @@ func (h *HelpRequestHandler) List(c *gin.Context) {
 func (h *HelpRequestHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
+	// 校验 ID 是否为有效 UUID，避免数据库报 500
+	if _, parseErr := uuid.Parse(id); parseErr != nil {
+		response.NotFound(c, "help request not found")
+		return
+	}
+
 	var item dto.HelpRequestResponse
 	var lat, lng float64
 	var images []string

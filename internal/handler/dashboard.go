@@ -102,23 +102,23 @@ func (h *DashboardHandler) GetUrgencyDistribution(c *gin.Context) {
 // GetMatchStats 匹配效率统计
 func (h *DashboardHandler) GetMatchStats(c *gin.Context) {
 	var stats struct {
-		TotalMatches     int64   `json:"total_matches"`
-		CompletedCount    int64   `json:"completed_count"`
-		EscalatedCount    int64   `json:"escalated_count"`
-		P2PCoverageRate   float64 `json:"p2p_coverage_rate"`
-		EscalationRate    float64 `json:"escalation_rate"`
+		TotalMatches    int64   `json:"total_matches"`
+		CompletedCount  int64   `json:"completed_count"`
+		EscalatedCount  int64   `json:"escalated_count"`
+		P2PCoverageRate float64 `json:"p2p_coverage_rate"`
+		EscalationRate  float64 `json:"escalation_rate"`
 	}
 
-	// 使用预定义视图
-	err := database.Pool.QueryRow(c, `
-		SELECT total_matches, completed_count, escalated_count,
-			p2p_coverage_rate, escalation_rate
-		FROM v_match_stats
-	`).Scan(&stats.TotalMatches, &stats.CompletedCount, &stats.EscalatedCount,
-		&stats.P2PCoverageRate, &stats.EscalationRate)
-	if err != nil {
-		response.InternalError(c, "query failed")
-		return
+	// 内联 SQL 替代 v_match_stats 视图
+	database.Pool.QueryRow(c, `SELECT COUNT(*) FROM matches`).Scan(&stats.TotalMatches)
+	database.Pool.QueryRow(c, `SELECT COUNT(*) FROM matches WHERE status = 'completed'`).Scan(&stats.CompletedCount)
+	database.Pool.QueryRow(c, `SELECT COUNT(*) FROM escalations WHERE resolved_at IS NULL`).Scan(&stats.EscalatedCount)
+
+	if stats.TotalMatches > 0 {
+		stats.P2PCoverageRate = float64(stats.CompletedCount) / float64(stats.TotalMatches) * 100
+	}
+	if stats.TotalMatches > 0 {
+		stats.EscalationRate = float64(stats.EscalatedCount) / float64(stats.TotalMatches) * 100
 	}
 
 	response.Success(c, stats)

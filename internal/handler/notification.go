@@ -122,27 +122,35 @@ func (h *NotificationHandler) Subscribe(c *gin.Context) {
 		return
 	}
 
-	// 查找模板
-	var templateDBID string
-	err := database.Pool.QueryRow(c, `
-		SELECT id FROM notification_templates WHERE template_id = $1 AND status = 'active'
-	`, req.TemplateID).Scan(&templateDBID)
-	if err != nil {
-		response.NotFound(c, "template not found")
+	templateIDs := req.GetTemplateIDs()
+	if len(templateIDs) == 0 {
+		response.BadRequest(c, "template_id or template_ids is required")
 		return
 	}
 
-	// 创建或更新订阅
-	subID := uuid.New().String()
-	_, err = database.Pool.Exec(c, `
-		INSERT INTO subscriptions (id, user_id, template_id, type, status, subscribed_at)
-		VALUES ($1,$2,$3,$4,'subscribed',NOW())
-		ON CONFLICT (user_id, template_id)
-		DO UPDATE SET status = 'subscribed', type = $4, subscribed_at = NOW()
-	`, subID, userID, templateDBID, req.Type)
-	if err != nil {
-		response.InternalError(c, "subscribe failed")
-		return
+	subscribeType := req.GetSubscribeType()
+	if subscribeType == "" {
+		subscribeType = "longterm"
+	}
+
+	for _, tid := range templateIDs {
+		// 查找模板
+		var templateDBID string
+		err := database.Pool.QueryRow(c, `
+			SELECT id FROM notification_templates WHERE template_id = $1 AND status = 'active'
+		`, tid).Scan(&templateDBID)
+		if err != nil {
+			continue // 跳过不存在的模板
+		}
+
+		// 创建或更新订阅
+		subID := uuid.New().String()
+		_, _ = database.Pool.Exec(c, `
+			INSERT INTO subscriptions (id, user_id, template_id, type, status, subscribed_at)
+			VALUES ($1,$2,$3,$4,'subscribed',NOW())
+			ON CONFLICT (user_id, template_id)
+			DO UPDATE SET status = 'subscribed', type = $4, subscribed_at = NOW()
+		`, subID, userID, templateDBID, subscribeType)
 	}
 
 	response.Created(c, nil)
@@ -153,7 +161,7 @@ func (h *NotificationHandler) GetPreferences(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 
 	rows, err := database.Pool.Query(c, `
-		SELECT np.template_id, nt.title, np.enabled
+		SELECT nt.template_id, nt.title, np.enabled
 		FROM notification_preferences np
 		JOIN notification_templates nt ON np.template_id = nt.id
 		WHERE np.user_id = $1
@@ -185,12 +193,22 @@ func (h *NotificationHandler) UpdatePreference(c *gin.Context) {
 		return
 	}
 
-	_, err := database.Pool.Exec(c, `
+	// 查找模板的数据库 ID
+	var templateDBID string
+	err := database.Pool.QueryRow(c, `
+		SELECT id FROM notification_templates WHERE template_id = $1 AND status = 'active'
+	`, req.TemplateID).Scan(&templateDBID)
+	if err != nil {
+		response.NotFound(c, "template not found")
+		return
+	}
+
+	_, err = database.Pool.Exec(c, `
 		INSERT INTO notification_preferences (id, user_id, template_id, enabled, updated_at)
 		VALUES ($1, $2, $3, $4, NOW())
 		ON CONFLICT (user_id, template_id)
 		DO UPDATE SET enabled = $4, updated_at = NOW()
-	`, uuid.New().String(), userID, req.TemplateID, req.Enabled)
+	`, uuid.New().String(), userID, templateDBID, req.Enabled)
 	if err != nil {
 		response.InternalError(c, "update preference failed")
 		return

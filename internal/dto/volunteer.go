@@ -1,16 +1,21 @@
 package dto
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // --- Volunteer DTOs ---
 
 // CreateVolunteerRequest 注册志愿者
 type CreateVolunteerRequest struct {
-	DisplayName string   `json:"display_name" binding:"required,max=100"`
-	Bio         string   `json:"bio,omitempty"`
-	CertNo      string   `json:"cert_no,omitempty"`
-	AreaCode    string   `json:"area_code" binding:"required"`
-	Lat         *float64 `json:"lat"`
-	Lng         *float64 `json:"lng"`
-	Skills      []VolunteerSkillItem `json:"skills,omitempty"`
+	DisplayName string                `json:"display_name" binding:"required,max=100"`
+	Bio         string                `json:"bio,omitempty"`
+	CertNo      string                `json:"cert_no,omitempty"`
+	AreaCode    string                `json:"area_code" binding:"required"`
+	Lat         *float64              `json:"lat"`
+	Lng         *float64              `json:"lng"`
+	Skills      FlexibleSkillList     `json:"skills,omitempty"`
 }
 
 // VolunteerSkillItem 技能项
@@ -18,6 +23,32 @@ type VolunteerSkillItem struct {
 	SkillName   string `json:"skill_name" binding:"required"`
 	Proficiency string `json:"proficiency"`
 }
+
+// FlexibleSkillList 技能列表，兼容 []string 和 []VolunteerSkillItem 两种格式
+type FlexibleSkillList []VolunteerSkillItem
+
+func (f *FlexibleSkillList) UnmarshalJSON(data []byte) error {
+	// 尝试解析为对象数组 [{skill_name:..., proficiency:...}]
+	var items []VolunteerSkillItem
+	if err := json.Unmarshal(data, &items); err == nil {
+		*f = items
+		return nil
+	}
+
+	// 尝试解析为字符串数组 ["船只操作", "急救"]
+	var strItems []string
+	if err := json.Unmarshal(data, &strItems); err == nil {
+		result := make([]VolunteerSkillItem, len(strItems))
+		for i, s := range strItems {
+			result[i] = VolunteerSkillItem{SkillName: s}
+		}
+		*f = result
+		return nil
+	}
+
+	return fmt.Errorf("skills: must be []string or []VolunteerSkillItem")
+}
+
 
 // UpdateVolunteerRequest 更新志愿者信息
 type UpdateVolunteerRequest struct {

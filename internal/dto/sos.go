@@ -4,8 +4,8 @@ package dto
 
 // SOSTriggerRequest SOS触发
 type SOSTriggerRequest struct {
-	Lat            float64 `json:"lat" binding:"required"`
-	Lng            float64 `json:"lng" binding:"required"`
+	Lat            float64 `json:"lat"`
+	Lng            float64 `json:"lng"`
 	LocationSource string  `json:"location_source"`
 	LastKnownLat   float64 `json:"last_known_lat,omitempty"`
 	LastKnownLng   float64 `json:"last_known_lng,omitempty"`
