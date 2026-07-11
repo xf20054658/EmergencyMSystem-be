@@ -52,6 +52,7 @@ func Setup(cfg *config.Config, engine *service.MatchEngine, wsHub *websocket.Hub
 	{
 		auth.POST("/login", authH.Login)
 		auth.POST("/login/phone", authH.PhoneLogin)
+		auth.POST("/login-wx", authH.WxLogin)
 	}
 
 	// 需要鉴权的路由

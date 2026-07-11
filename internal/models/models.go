@@ -83,6 +83,7 @@ type User struct {
 	PhoneMasked    *string    `json:"phone_masked,omitempty" db:"phone_masked"`
 	RealName       *string    `json:"real_name,omitempty" db:"real_name"`
 	IDCardHash     *string    `json:"-" db:"id_card_hash"`
+	PasswordHash   *string    `json:"-" db:"password_hash"`
 	Status         string     `json:"status" db:"status"`
 	AreaCode       *string    `json:"area_code,omitempty" db:"area_code"`
 	GuestPhone     *string    `json:"guest_phone,omitempty" db:"guest_phone"`

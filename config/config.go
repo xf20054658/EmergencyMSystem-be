@@ -12,6 +12,7 @@ type Config struct {
 	DB       DBConfig
 	Redis    RedisConfig
 	JWT      JWTConfig
+	WeChat   WeChatConfig
 	CORS     CORSConfig
 	Match    MatchConfig
 	RateLimit RateLimitConfig
@@ -60,6 +61,11 @@ type RedisConfig struct {
 type JWTConfig struct {
 	Secret            string
 	AccessTokenExpire time.Duration
+}
+
+type WeChatConfig struct {
+	AppID     string
+	AppSecret string
 }
 
 type CORSConfig struct {
@@ -125,6 +131,10 @@ func Load() *Config {
 		JWT: JWTConfig{
 			Secret:            getEnv("JWT_SECRET", "emergency-msystem-secret-key-change-in-production"),
 			AccessTokenExpire: mustParseDuration(getEnv("JWT_ACCESS_EXPIRE", "168h")), // 7天
+		},
+		WeChat: WeChatConfig{
+			AppID:     getEnv("WECHAT_APPID", ""),
+			AppSecret: getEnv("WECHAT_SECRET", ""),
 		},
 		CORS: CORSConfig{
 			AllowedOrigins: []string{"*"},
