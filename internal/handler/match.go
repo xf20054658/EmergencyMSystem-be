@@ -421,6 +421,99 @@ func (h *MatchHandler) Reinforce(c *gin.Context) {
 	response.Created(c, map[string]string{"id": rID})
 }
 
+// ============================================================
+// 隐私通话 — AXB 虚拟号码绑定 / 通话 / 解绑 / 查询
+// ============================================================
+
+var commSvc = service.NewCommunicationService()
+
+// BindPhone AXB 虚拟号码绑定
+// POST /api/v1/matches/:id/bind
+func (h *MatchHandler) BindPhone(c *gin.Context) {
+	id := c.Param("id")
+
+	var req dto.BindPhoneRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid params, provider must be aliyun or tencent")
+		return
+	}
+
+	resp, err := commSvc.BindPhone(c, id, req.Provider)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Created(c, resp)
+}
+
+// Call 发起通话（VoIP 或 AXB 回拨）
+// POST /api/v1/matches/:id/call
+func (h *MatchHandler) Call(c *gin.Context) {
+	id := c.Param("id")
+
+	var req dto.CallRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid params, call_type must be voip or phone")
+		return
+	}
+
+	// 确定角色：志愿者 vs 求助者
+	callerRole := "requester"
+	if _, ok := c.Get("volunteer_id"); ok {
+		callerRole = "provider"
+	}
+
+	resp, err := commSvc.Call(c, id, req.CallType, callerRole)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, resp)
+}
+
+// Unbind 解绑虚拟号码
+// POST /api/v1/matches/:id/unbind
+func (h *MatchHandler) Unbind(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := commSvc.Unbind(c, id); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// GetBinding 获取当前绑定信息
+// GET /api/v1/matches/:id/binding
+func (h *MatchHandler) GetBinding(c *gin.Context) {
+	id := c.Param("id")
+
+	resp, err := commSvc.GetBinding(c, id)
+	if err != nil {
+		response.NotFound(c, "未找到有效绑定")
+		return
+	}
+
+	response.Success(c, resp)
+}
+
+// GetCallRecords 获取通话记录
+// GET /api/v1/matches/:id/call-records
+func (h *MatchHandler) GetCallRecords(c *gin.Context) {
+	id := c.Param("id")
+
+	records, err := commSvc.GetCallRecords(c, id)
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, records)
+}
+
 // GPSReport 志愿者GPS上报
 func (h *MatchHandler) GPSReport(c *gin.Context) {
 	volunteerID, _ := c.Get("volunteer_id")

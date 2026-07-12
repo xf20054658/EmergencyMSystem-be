@@ -85,6 +85,12 @@ func Setup(cfg *config.Config, engine *service.MatchEngine, wsHub *websocket.Hub
 		matches.POST("/:id/complete", middleware.VolunteerRequired(), matchH.Complete)
 		matches.POST("/:id/confirm", matchH.ConfirmCompletion)
 		matches.POST("/:id/reinforce", middleware.VolunteerRequired(), matchH.Reinforce)
+		// 隐私通话 — AXB 虚拟号码
+		matches.POST("/:id/bind", matchH.BindPhone)
+		matches.POST("/:id/call", matchH.Call)
+		matches.POST("/:id/unbind", matchH.Unbind)
+		matches.GET("/:id/binding", matchH.GetBinding)
+		matches.GET("/:id/call-records", matchH.GetCallRecords)
 	}
 
 	// GPS上报
